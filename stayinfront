@@ -3,7 +3,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
-local DISTANCE = 21
+local DISTANCE = 25
 local isRunning = false
 local targetUsername = ""
 local followConnection
