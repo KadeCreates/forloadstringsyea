@@ -1,0 +1,76 @@
+
+local targetUsername = "cryingprada"
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local localPlayer = Players.LocalPlayer
+local followConnection
+
+-- Wait until player's HRP is ready
+local function waitForHRP(player)
+    local character = player.Character or player.CharacterAdded:Wait()
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    while not hrp do
+        character = player.Character or player.CharacterAdded:Wait()
+        hrp = character:FindFirstChild("HumanoidRootPart")
+        task.wait()
+    end
+    return character, hrp
+end
+
+-- Bind follow logic
+local function bindFollow(targetPlayer)
+    if followConnection then
+        followConnection:Disconnect()
+        followConnection = nil
+    end
+
+    local _, myHRP = waitForHRP(localPlayer)
+    local _, targetHRP = waitForHRP(targetPlayer)
+
+    followConnection = RunService.RenderStepped:Connect(function()
+        if not myHRP or not targetHRP then return end
+        local frontDirection = targetHRP.CFrame.LookVector
+        local followPosition = targetHRP.Position + frontDirection * 17
+        myHRP.CFrame = CFrame.new(followPosition, targetHRP.Position)
+    end)
+
+    -- Re-bind on respawn
+    localPlayer.CharacterAdded:Connect(function()
+        task.wait(1)
+        bindFollow(targetPlayer)
+    end)
+
+    targetPlayer.CharacterAdded:Connect(function()
+        task.wait(1)
+        bindFollow(targetPlayer)
+    end)
+end
+
+-- Start following when target joins
+local function onPlayerAdded(player)
+    if player.Name:lower() == targetUsername:lower() then
+        print("✅ Target joined, starting follow.")
+        bindFollow(player)
+    end
+end
+
+-- Stop following if target leaves
+local function onPlayerRemoving(player)
+    if player.Name:lower() == targetUsername:lower() then
+        print("❌ Target left, waiting for rejoin...")
+        if followConnection then
+            followConnection:Disconnect()
+            followConnection = nil
+        end
+    end
+end
+
+-- Listen for join/leave
+Players.PlayerAdded:Connect(onPlayerAdded)
+Players.PlayerRemoving:Connect(onPlayerRemoving)
+
+-- If target is already in-game at script start, follow immediately
+for _, p in pairs(Players:GetPlayers()) do
+    onPlayerAdded(p)
+end
