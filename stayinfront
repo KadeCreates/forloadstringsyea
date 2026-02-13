@@ -1,52 +1,76 @@
---[[
-	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
-]]
---[[ Configuration ]]--
-local targetUsername = "cryingprada" -- Change to the target's username
-local followDistance = 3
-local toggleKey = Enum.KeyCode.T
+-- Follow Player Script - Stay 15 Studs in Front
+-- Configure your target username here
+local TARGET_USERNAME = "cryingprada" -- CHANGE THIS to the username you want to follow
 
---[[ Script Start ]]--
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
 
-local localPlayer = Players.LocalPlayer
-local char = localPlayer.Character or localPlayer.CharacterAdded:Wait()
-local hrp = char:WaitForChild("HumanoidRootPart")
+local DISTANCE = 15 -- Distance in studs to stay in front of target
+local connection
 
-local toggled = false
-local targetPlayer = nil
-
--- Toggle listener
-UIS.InputBegan:Connect(function(input, gpe)
-    if not gpe and input.KeyCode == toggleKey then
-        toggled = not toggled
-        print("Stay-in-front toggled:", toggled)
-    end
-end)
-
--- Helper: get player by username
-local function getPlayerByUsername(name)
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr.Name:lower() == name:lower() or plr.DisplayName:lower() == name:lower() then
-            return plr
+-- Function to get the target player
+local function getTargetPlayer()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Name == TARGET_USERNAME or player.DisplayName == TARGET_USERNAME then
+            return player
         end
     end
     return nil
 end
 
--- Constant tracking loop
-RunService.RenderStepped:Connect(function()
-    if not toggled then return end
+-- Function to teleport in front of target
+local function teleportInFrontOfTarget()
+    local targetPlayer = getTargetPlayer()
+    
+    if not targetPlayer then
+        warn("Target player '" .. TARGET_USERNAME .. "' not found!")
+        return
+    end
+    
+    local targetChar = targetPlayer.Character
+    local localChar = LocalPlayer.Character
+    
+    if not targetChar or not localChar then return end
+    
+    local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+    local localRoot = localChar:FindFirstChild("HumanoidRootPart")
+    
+    if not targetRoot or not localRoot then return end
+    
+    -- Calculate position 15 studs in front of target
+    local targetCFrame = targetRoot.CFrame
+    local frontPosition = targetCFrame * CFrame.new(0, 0, -DISTANCE) -- Negative Z moves forward in front
+    
+    -- Teleport to position
+    localRoot.CFrame = frontPosition
+end
 
-    targetPlayer = getPlayerByUsername(targetUsername)
-    if not targetPlayer or not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
+-- Function to setup teleportation for a character
+local function setupCharacter(character)
+    if connection then
+        connection:Disconnect()
+    end
+    
+    -- Wait for character to fully load
+    character:WaitForChild("HumanoidRootPart")
+    
+    -- Continuously teleport in front of target
+    connection = RunService.Heartbeat:Connect(function()
+        teleportInFrontOfTarget()
+    end)
+end
 
-    local targetHRP = targetPlayer.Character.HumanoidRootPart
-    local targetLook = targetHRP.CFrame.LookVector
-    local newPosition = targetHRP.Position + (targetLook * followDistance)
+-- Setup for current character
+if LocalPlayer.Character then
+    setupCharacter(LocalPlayer.Character)
+end
 
-    -- Smooth move to front
-    hrp.CFrame = CFrame.new(newPosition, targetHRP.Position)
+-- Setup for future characters (respawns)
+LocalPlayer.CharacterAdded:Connect(function(character)
+    setupCharacter(character)
 end)
+
+print("Follow script loaded!")
+print("Following: " .. TARGET_USERNAME)
+print("Distance: " .. DISTANCE .. " studs in front")
