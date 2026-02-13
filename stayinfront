@@ -1,76 +1,23 @@
--- Follow Player Script - Stay 15 Studs in Front
--- Configure your target username here
-local TARGET_USERNAME = "cryingprada" -- CHANGE THIS to the username you want to follow
+-- Simple Follow Script - 15 Studs in Front
+local TARGET_USERNAME = "cryingprada" -- CHANGE THIS
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
 
-local DISTANCE = 15 -- Distance in studs to stay in front of target
-local connection
-
--- Function to get the target player
-local function getTargetPlayer()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player.Name == TARGET_USERNAME or player.DisplayName == TARGET_USERNAME then
-            return player
+while true do
+    local target = Players:FindFirstChild(TARGET_USERNAME)
+    
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local localChar = Players.LocalPlayer.Character
+        
+        if localChar and localChar:FindFirstChild("HumanoidRootPart") then
+            local targetRoot = target.Character.HumanoidRootPart
+            local localRoot = localChar.HumanoidRootPart
+            
+            -- Teleport 15 studs in front
+            localRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, -15)
         end
     end
-    return nil
+    
+    task.wait(0.1)
 end
-
--- Function to teleport in front of target
-local function teleportInFrontOfTarget()
-    local targetPlayer = getTargetPlayer()
-    
-    if not targetPlayer then
-        warn("Target player '" .. TARGET_USERNAME .. "' not found!")
-        return
-    end
-    
-    local targetChar = targetPlayer.Character
-    local localChar = LocalPlayer.Character
-    
-    if not targetChar or not localChar then return end
-    
-    local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
-    local localRoot = localChar:FindFirstChild("HumanoidRootPart")
-    
-    if not targetRoot or not localRoot then return end
-    
-    -- Calculate position 15 studs in front of target
-    local targetCFrame = targetRoot.CFrame
-    local frontPosition = targetCFrame * CFrame.new(0, 0, -DISTANCE) -- Negative Z moves forward in front
-    
-    -- Teleport to position
-    localRoot.CFrame = frontPosition
-end
-
--- Function to setup teleportation for a character
-local function setupCharacter(character)
-    if connection then
-        connection:Disconnect()
-    end
-    
-    -- Wait for character to fully load
-    character:WaitForChild("HumanoidRootPart")
-    
-    -- Continuously teleport in front of target
-    connection = RunService.Heartbeat:Connect(function()
-        teleportInFrontOfTarget()
-    end)
-end
-
--- Setup for current character
-if LocalPlayer.Character then
-    setupCharacter(LocalPlayer.Character)
-end
-
--- Setup for future characters (respawns)
-LocalPlayer.CharacterAdded:Connect(function(character)
-    setupCharacter(character)
-end)
-
-print("Follow script loaded!")
-print("Following: " .. TARGET_USERNAME)
-print("Distance: " .. DISTANCE .. " studs in front")
