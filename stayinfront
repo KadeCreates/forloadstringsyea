@@ -1,0 +1,52 @@
+--[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+--[[ Configuration ]]--
+local targetUsername = "cryingprada" -- Change to the target's username
+local followDistance = 3
+local toggleKey = Enum.KeyCode.T
+
+--[[ Script Start ]]--
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+
+local localPlayer = Players.LocalPlayer
+local char = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
+
+local toggled = false
+local targetPlayer = nil
+
+-- Toggle listener
+UIS.InputBegan:Connect(function(input, gpe)
+    if not gpe and input.KeyCode == toggleKey then
+        toggled = not toggled
+        print("Stay-in-front toggled:", toggled)
+    end
+end)
+
+-- Helper: get player by username
+local function getPlayerByUsername(name)
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr.Name:lower() == name:lower() or plr.DisplayName:lower() == name:lower() then
+            return plr
+        end
+    end
+    return nil
+end
+
+-- Constant tracking loop
+RunService.RenderStepped:Connect(function()
+    if not toggled then return end
+
+    targetPlayer = getPlayerByUsername(targetUsername)
+    if not targetPlayer or not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
+
+    local targetHRP = targetPlayer.Character.HumanoidRootPart
+    local targetLook = targetHRP.CFrame.LookVector
+    local newPosition = targetHRP.Position + (targetLook * followDistance)
+
+    -- Smooth move to front
+    hrp.CFrame = CFrame.new(newPosition, targetHRP.Position)
+end)
